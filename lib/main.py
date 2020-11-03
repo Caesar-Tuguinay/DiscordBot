@@ -18,8 +18,11 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    if message.content == 'wassup':
-        response = "wassup"
+    if message.content.startswith("https://quizlet.com/"):
+        author = message.author
+        response = "valid"
         await message.channel.send(response)
+    else:
+        await message.channel.send("invalid")
 
 client.run(TOKEN)
