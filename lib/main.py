@@ -1,7 +1,8 @@
 import os
+import re
 import random
 import requests
-
+import time
 import discord
 from webbot import Browser
 from dotenv import load_dotenv
@@ -18,24 +19,32 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    if message.content == '!options':
+    if message.content.startswith("https://quizlet.com/"):
+        link = message.content
         channel = message.channel
-        author = message.author
-        await channel.send('Choose:')
-        await channel.send('Least Squares')
-        await channel.send('or')
-        await channel.send('NLP')
-
-        def check_math(m):
-            return m.content == 'Least Squares' and m.channel == channel and m.author == author
-
-        def check_nlp(m):
-            return m.content == 'NLP' and m.channel == channel and m.author == author
-
-        def check_all(m):
-            return check_math(m) or check_nlp(m)
-
-        msg = await client.wait_for('message', check=check_all)
-        await channel.send('Nice choice {.author}! But this is not ready yet.'.format(msg))
+        web = Browser()
+        web.go_to(link)
+        await channel.send('Finding Login Info for Quizlet. Give me some time.')
+        for x in (1,10):
+            web.click('Log in', tag='button', loose_match=False)
+        await channel.send('Logging in')
+        web.type('', into = 'username')
+        web.type('', into = 'password')
+        web.click('Log in', tag='button')
+        await channel.send('Extracting HTML')
+        html = web.get_page_source()
+        soup = BeautifulSoup(html, 'html.parser')
+        results = soup.find_all('div', class_='SetPageTerms-term')
+        for result in results:
+            if result is not None:
+                result = str(result)
+                result = result.replace('"', '')
+                result = result.replace('<', 'AAA')
+                result = result.replace('>', 'BBB')
+                result = result.replace('/', 'CCC')
+                await channel.send(result)
+                left_term = re.search("^tlBBB.*</span>$", result)
+                right_term = re.search("^enBBB.*<$", result)
+                await channel.send('Tagalog Term: ' + left_term + '. English Term: ' + right_term + '.')
 
 client.run(TOKEN)
